@@ -1,0 +1,192 @@
+CREATE DATABASE "RESTAURANT"
+  WITH OWNER = postgres
+       ENCODING = 'UTF8'
+       TABLESPACE = pg_default
+       LC_COLLATE = 'Ukrainian_Ukraine.1251'
+       LC_CTYPE = 'Ukrainian_Ukraine.1251'
+       CONNECTION LIMIT = -1;
+
+CREATE TABLE public.categories
+(
+  id integer NOT NULL,
+  name character varying(50),
+  CONSTRAINT categories_pkey PRIMARY KEY (id),
+  CONSTRAINT categories_name_key UNIQUE (name)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.contains
+(
+  id integer NOT NULL,
+  id_dish integer NOT NULL,
+  id_ongradient integer NOT NULL,
+  CONSTRAINT contains_pkey PRIMARY KEY (id),
+  CONSTRAINT contains_id_dish_fkey FOREIGN KEY (id_dish)
+      REFERENCES public.dishes (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT contains_id_ongradient_fkey FOREIGN KEY (id_ongradient)
+      REFERENCES public.ingradients (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.departments
+(
+  id integer NOT NULL,
+  dep_name character varying,
+  CONSTRAINT departments_pkey PRIMARY KEY (id)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.dish_in_menu
+(
+  id_dish integer,
+  id_menu integer,
+  CONSTRAINT dish_in_menu_id_dish_fkey FOREIGN KEY (id_dish)
+      REFERENCES public.dishes (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT dish_in_menu_id_menu_fkey FOREIGN KEY (id_menu)
+      REFERENCES public.menu (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.dishes
+(
+  id integer NOT NULL,
+  name character varying NOT NULL,
+  category integer,
+  price double precision,
+  weight integer,
+  CONSTRAINT dishes_pkey PRIMARY KEY (id),
+  CONSTRAINT dishes_category_fkey FOREIGN KEY (category)
+      REFERENCES public.categories (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT dishes_price_check CHECK (price > 0::double precision),
+  CONSTRAINT dishes_weight_check CHECK (weight > 0)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.employee
+(
+  id integer NOT NULL,
+  first_name character varying NOT NULL,
+  last_name character varying NOT NULL,
+  birthday date,
+  phone character varying,
+  id_department integer,
+  salary integer,
+  CONSTRAINT employee_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_id_depatment FOREIGN KEY (id_department)
+      REFERENCES public.departments (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT employee_phone_key UNIQUE (phone),
+  CONSTRAINT employee_phone_check CHECK (phone::text ~ '^[0-9]+$'::text)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.ingradients
+(
+  id integer NOT NULL,
+  ingradient character varying NOT NULL,
+  CONSTRAINT ingradients_pkey PRIMARY KEY (id)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.menu
+(
+  id integer NOT NULL,
+  dish character varying NOT NULL,
+  CONSTRAINT menu_pkey PRIMARY KEY (id)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.order_menu
+(
+  id integer NOT NULL,
+  id_order integer NOT NULL,
+  id_dish integer NOT NULL,
+  is_done boolean DEFAULT false,
+  CONSTRAINT order_menu_pkey PRIMARY KEY (id),
+  CONSTRAINT order_menu_id_dish_fkey FOREIGN KEY (id_dish)
+      REFERENCES public.dishes (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT order_menu_id_order_fkey FOREIGN KEY (id_order)
+      REFERENCES public.orders (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.orders
+(
+  id integer NOT NULL,
+  id_waiter integer,
+  id_table integer,
+  order_date date,
+  is_closed boolean DEFAULT false,
+  CONSTRAINT orders_pkey PRIMARY KEY (id),
+  CONSTRAINT orders_id_waiter_fkey FOREIGN KEY (id_waiter)
+      REFERENCES public.employee (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT orders_id_table_check CHECK (id_table > 0)
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.prepared_dishes
+(
+  id integer NOT NULL,
+  id_dishes integer NOT NULL,
+  id_cock integer,
+  id_order integer,
+  date_of_order date,
+  CONSTRAINT prepared_dishes_pkey PRIMARY KEY (id),
+  CONSTRAINT prepared_dishes_id_cock_fkey FOREIGN KEY (id_cock)
+      REFERENCES public.employee (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT prepared_dishes_id_dishes_fkey FOREIGN KEY (id_dishes)
+      REFERENCES public.dishes (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT prepared_dishes_id_order_fkey FOREIGN KEY (id_order)
+      REFERENCES public.orders (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+)
+WITH (
+  OIDS=FALSE
+);
+
+CREATE TABLE public.stock
+(
+  id integer NOT NULL,
+  id_ongradient integer NOT NULL,
+  amount integer,
+  measure character varying(10) NOT NULL DEFAULT 'kg'::character varying,
+  CONSTRAINT stock_pkey PRIMARY KEY (id),
+  CONSTRAINT stock_id_ongradient_fkey FOREIGN KEY (id_ongradient)
+      REFERENCES public.ingradients (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT stock_id_ongradient_key UNIQUE (id_ongradient),
+  CONSTRAINT stock_amount_check CHECK (amount > 0)
+)
+WITH (
+  OIDS=FALSE
+);
